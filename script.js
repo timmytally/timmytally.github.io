@@ -68,32 +68,50 @@ function setupNavbarScroll() {
 function setupMobileMenu() {
   if (!hamburger || !navLinks) return;
   
-  // Toggle mobile menu
-  hamburger.addEventListener("click", () => {
+  // Toggle mobile menu - using both click and touch events for better mobile support
+  const toggleMenu = () => {
     navLinks.classList.toggle("active");
     hamburger.classList.toggle("active");
     document.body.style.overflow = navLinks.classList.contains('active') ? 'hidden' : '';
+  };
+  
+  // Add both click and touch events for better mobile support
+  hamburger.addEventListener("click", toggleMenu);
+  hamburger.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    toggleMenu();
   });
 
-  // Close mobile menu when clicking on a nav link
+  // Close mobile menu when clicking/tapping on a nav link
+  const closeMenu = () => {
+    navLinks.classList.remove("active");
+    hamburger.classList.remove("active");
+    document.body.style.overflow = '';
+  };
+  
   navLinksItems.forEach((link) => {
-    link.addEventListener("click", () => {
-      navLinks.classList.remove("active");
-      hamburger.classList.remove("active");
-      document.body.style.overflow = '';
+    link.addEventListener("click", closeMenu);
+    link.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      closeMenu();
+      // Trigger the click after a small delay to allow menu to close
+      setTimeout(() => {
+        link.click();
+      }, 50);
     });
   });
   
-  // Close menu when clicking outside
-  document.addEventListener('click', (e) => {
+  // Close menu when clicking/tapping outside
+  const handleOutsideClick = (e) => {
     if (navLinks.classList.contains('active') && 
         !e.target.closest('.nav-links') && 
         !e.target.closest('.hamburger')) {
-      navLinks.classList.remove('active');
-      hamburger.classList.remove('active');
-      document.body.style.overflow = '';
+      closeMenu();
     }
-  });
+  };
+  
+  document.addEventListener('click', handleOutsideClick);
+  document.addEventListener('touchend', handleOutsideClick);
 }
 
 // Enhanced smooth scrolling for anchor links
