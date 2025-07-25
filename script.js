@@ -264,6 +264,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize theme first
   initTheme();
   
+  // Initialize mobile menu
+  setupMobileMenu();
+  
   // Add visible class to hero section immediately
   const hero = document.querySelector('.hero');
   if (hero) hero.classList.add('visible');
