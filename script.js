@@ -1,23 +1,28 @@
 // DOM Elements
 const hamburger = document.querySelector(".hamburger");
 const navLinks = document.querySelector(".nav-links");
-const navLinksItems = document.querySelectorAll(".nav-links li");
-const header = document.querySelector('header');
-const sections = document.querySelectorAll('section');
-const themeToggle = document.getElementById('theme-toggle');
+const navLinksItems = document.querySelectorAll(".nav-links li a");
+const header = document.querySelector("header");
+const sections = document.querySelectorAll("section");
+const themeToggle = document.getElementById("theme-toggle");
 const html = document.documentElement;
+
+// Create overlay element
+const navOverlay = document.createElement("div");
+navOverlay.className = "nav-overlay";
+document.body.appendChild(navOverlay);
 
 // Initialize Intersection Observer for scroll animations
 function initScrollObserver() {
   const observerOptions = {
     threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
+    rootMargin: "0px 0px -50px 0px",
   };
 
   const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
+        entry.target.classList.add("visible");
         // Optional: Unobserve after first trigger
         // observer.unobserve(entry.target);
       }
@@ -25,41 +30,47 @@ function initScrollObserver() {
   }, observerOptions);
 
   // Observe all sections
-  sections.forEach(section => observer.observe(section));
+  sections.forEach((section) => observer.observe(section));
 }
 
 // Navbar scroll effect
 function setupNavbarScroll() {
   if (!header) return;
-  
+
   let lastScroll = 0;
-  
-  window.addEventListener('scroll', () => {
+
+  window.addEventListener("scroll", () => {
     const currentScroll = window.pageYOffset;
-    
+
     // Add/remove scrolled class to header
     if (currentScroll > 100) {
-      header.classList.add('scrolled');
+      header.classList.add("scrolled");
     } else {
-      header.classList.remove('scrolled');
+      header.classList.remove("scrolled");
     }
-    
+
     // Hide/show navbar on scroll
     if (currentScroll <= 0) {
-      header.classList.remove('scroll-up');
+      header.classList.remove("scroll-up");
       return;
     }
-    
-    if (currentScroll > lastScroll && !header.classList.contains('scroll-down')) {
+
+    if (
+      currentScroll > lastScroll &&
+      !header.classList.contains("scroll-down")
+    ) {
       // Scroll Down
-      header.classList.remove('scroll-up');
-      header.classList.add('scroll-down');
-    } else if (currentScroll < lastScroll && header.classList.contains('scroll-down')) {
+      header.classList.remove("scroll-up");
+      header.classList.add("scroll-down");
+    } else if (
+      currentScroll < lastScroll &&
+      header.classList.contains("scroll-down")
+    ) {
       // Scroll Up
-      header.classList.remove('scroll-down');
-      header.classList.add('scroll-up');
+      header.classList.remove("scroll-down");
+      header.classList.add("scroll-up");
     }
-    
+
     lastScroll = currentScroll;
   });
 }
@@ -67,57 +78,113 @@ function setupNavbarScroll() {
 // Mobile menu functionality
 function setupMobileMenu() {
   if (!hamburger || !navLinks) return;
-  
-  // Toggle mobile menu - using both click and touch events for better mobile support
-  const toggleMenu = () => {
+
+  // Toggle mobile menu
+  const toggleMenu = (e) => {
+    if (e) e.preventDefault();
+    const isOpening = !navLinks.classList.contains("active");
+
+    // Toggle menu and overlay
     navLinks.classList.toggle("active");
     hamburger.classList.toggle("active");
-    document.body.style.overflow = navLinks.classList.contains('active') ? 'hidden' : '';
-  };
-  
-  // Add both click and touch events for better mobile support
-  hamburger.addEventListener("click", toggleMenu);
-  hamburger.addEventListener("touchend", (e) => {
-    e.preventDefault();
-    toggleMenu();
-  });
+    navOverlay.classList.toggle("active");
 
-  // Close mobile menu when clicking/tapping on a nav link
-  const closeMenu = () => {
-    navLinks.classList.remove("active");
-    hamburger.classList.remove("active");
-    document.body.style.overflow = '';
-  };
-  
-  navLinksItems.forEach((link) => {
-    link.addEventListener("click", closeMenu);
-    link.addEventListener("touchend", (e) => {
-      e.preventDefault();
-      closeMenu();
-      // Trigger the click after a small delay to allow menu to close
-      setTimeout(() => {
-        link.click();
-      }, 50);
-    });
-  });
-  
-  // Close menu when clicking/tapping outside
-  const handleOutsideClick = (e) => {
-    if (navLinks.classList.contains('active') && 
-        !e.target.closest('.nav-links') && 
-        !e.target.closest('.hamburger')) {
-      closeMenu();
+    // Toggle body scroll
+    document.body.style.overflow = isOpening ? "hidden" : "";
+
+    // Animate menu items when opening
+    if (isOpening) {
+      const links = navLinks.querySelectorAll("li");
+      links.forEach((link, index) => {
+        link.style.transitionDelay = `${index * 0.1}s`;
+        link.style.opacity = "1";
+        link.style.transform = "translateX(0)";
+      });
     }
   };
-  
-  document.addEventListener('click', handleOutsideClick);
-  document.addEventListener('touchend', handleOutsideClick);
+
+  // Close mobile menu
+  const closeMenu = (e) => {
+    if (e) e.stopPropagation();
+    navLinks.classList.remove("active");
+    hamburger.classList.remove("active");
+    navOverlay.classList.remove("active");
+    document.body.style.overflow = "";
+
+    // Reset menu items animation
+    const links = navLinks.querySelectorAll("li");
+    links.forEach((link) => {
+      link.style.transitionDelay = "0s";
+      link.style.opacity = "0";
+      link.style.transform = "translateX(20px)";
+    });
+  };
+
+  // Add event listeners
+  hamburger.addEventListener("click", toggleMenu);
+  hamburger.addEventListener("touchend", toggleMenu);
+
+  // Close menu when clicking on overlay
+  navOverlay.addEventListener("click", closeMenu);
+  navOverlay.addEventListener("touchend", closeMenu);
+
+  // Handle navigation link clicks
+  navLinksItems.forEach((link) => {
+    link.addEventListener("click", (e) => {
+      // Only prevent default for anchor links
+      if (link.getAttribute("href").startsWith("#")) {
+        e.preventDefault();
+
+        // Close menu first
+        closeMenu();
+
+        // Then scroll to target
+        const targetId = link.getAttribute("href");
+        const targetElement = document.querySelector(targetId);
+
+        if (targetElement) {
+          // Small delay to allow menu to close before scrolling
+          setTimeout(() => {
+            window.scrollTo({
+              top: targetElement.offsetTop - 80, // Account for fixed header
+              behavior: "smooth",
+            });
+          }, 100);
+        }
+      }
+    });
+  });
+
+  // Close menu when clicking outside
+  const handleOutsideClick = (e) => {
+    if (
+      navLinks.classList.contains("active") &&
+      !e.target.closest(".nav-links") &&
+      !e.target.closest(".hamburger")
+    ) {
+      closeMenu(e);
+    }
+  };
+
+  document.addEventListener("click", handleOutsideClick);
+  document.addEventListener("touchend", handleOutsideClick);
+
+  // Close menu on window resize (if resized to desktop)
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (window.innerWidth > 768) {
+        closeMenu();
+      }
+    }, 250);
+  });
 }
 
 // Enhanced smooth scrolling for anchor links
 function setupSmoothScrolling() {
   if (!header || !navLinks || !hamburger) return;
-  
+
   document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
     anchor.addEventListener("click", function (e) {
       e.preventDefault();
@@ -128,19 +195,20 @@ function setupSmoothScrolling() {
       if (targetElement) {
         const headerHeight = header.offsetHeight;
         const elementPosition = targetElement.getBoundingClientRect().top;
-        const scrollPosition = elementPosition + window.pageYOffset - headerHeight;
-        
+        const scrollPosition =
+          elementPosition + window.pageYOffset - headerHeight;
+
         // Smooth scroll to target
         window.scrollTo({
           top: scrollPosition,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
-        
+
         // Close mobile menu if open
-        if (navLinks.classList.contains('active')) {
-          navLinks.classList.remove('active');
-          hamburger.classList.remove('active');
-          document.body.style.overflow = '';
+        if (navLinks.classList.contains("active")) {
+          navLinks.classList.remove("active");
+          hamburger.classList.remove("active");
+          document.body.style.overflow = "";
         }
       }
     });
@@ -221,80 +289,94 @@ function revealOnScroll() {
 // Theme Management
 function initTheme() {
   // Check for saved theme preference or use system preference
-  const savedTheme = localStorage.getItem('theme');
-  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  
+  const savedTheme = localStorage.getItem("theme");
+  const systemPrefersDark = window.matchMedia(
+    "(prefers-color-scheme: dark)"
+  ).matches;
+
   // Set theme based on saved preference or system preference
-  if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
-    html.setAttribute('data-theme', 'dark');
-    localStorage.setItem('theme', 'dark');
+  if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
+    html.setAttribute("data-theme", "dark");
+    localStorage.setItem("theme", "dark");
   } else {
-    html.setAttribute('data-theme', 'light');
-    localStorage.setItem('theme', 'light');
+    html.setAttribute("data-theme", "light");
+    localStorage.setItem("theme", "light");
   }
-  
+
   // Listen for system theme changes
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-    // Only update if user hasn't set a preference
-    if (!localStorage.getItem('theme')) {
-      const newTheme = e.matches ? 'dark' : 'light';
-      html.setAttribute('data-theme', newTheme);
-    }
-  });
-  
+  window
+    .matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", (e) => {
+      // Only update if user hasn't set a preference
+      if (!localStorage.getItem("theme")) {
+        const newTheme = e.matches ? "dark" : "light";
+        html.setAttribute("data-theme", newTheme);
+      }
+    });
+
   // Toggle theme on button click
   if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
-      const currentTheme = html.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      
+    themeToggle.addEventListener("click", () => {
+      const currentTheme = html.getAttribute("data-theme");
+      const newTheme = currentTheme === "dark" ? "light" : "dark";
+
       // Update theme
-      html.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-      
+      html.setAttribute("data-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
+
       // Add transition class for smooth transition
-      document.body.classList.add('theme-transition');
-      setTimeout(() => document.body.classList.remove('theme-transition'), 300);
+      document.body.classList.add("theme-transition");
+      setTimeout(() => document.body.classList.remove("theme-transition"), 300);
     });
   }
 }
 
 // Initialize animations on page load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   // Initialize theme first
   initTheme();
-  
+
   // Initialize mobile menu
   setupMobileMenu();
-  
-  // Add visible class to hero section immediately
-  const hero = document.querySelector('.hero');
-  if (hero) hero.classList.add('visible');
-  
-  // Initialize all animations and event listeners
+
+  // Initialize other components
   initScrollObserver();
   setupSmoothScrolling();
   initScrollReveal();
   setupNavbarScroll();
-  setupMobileMenu();
+
+  // Add visible class to hero section immediately
+  const hero = document.querySelector(".hero");
+  if (hero) hero.classList.add("visible");
+
+  // Initialize menu items for animation
+  const navItems = document.querySelectorAll(".nav-links li");
+  navItems.forEach((item) => {
+    item.style.opacity = "0";
+    item.style.transform = "translateX(20px)";
+    item.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+  });
 });
 
 function initSmoothScroll() {
   // Smooth scroll for anchor links with offset
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function(e) {
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", function (e) {
       e.preventDefault();
-      const targetId = this.getAttribute('href');
-      if (targetId === '#') return;
-      
+      const targetId = this.getAttribute("href");
+      if (targetId === "#") return;
+
       const targetElement = document.querySelector(targetId);
       if (targetElement) {
-        const headerHeight = document.querySelector('header').offsetHeight;
-        const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
-        
+        const headerHeight = document.querySelector("header").offsetHeight;
+        const targetPosition =
+          targetElement.getBoundingClientRect().top +
+          window.pageYOffset -
+          headerHeight;
+
         window.scrollTo({
           top: targetPosition,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
       }
     });
@@ -303,36 +385,38 @@ function initSmoothScroll() {
 
 function initScrollReveal() {
   // Add any scroll reveal animations here
-  const fadeElements = document.querySelectorAll('.fade-in, [class*="fade-in-"]');
-  
+  const fadeElements = document.querySelectorAll(
+    '.fade-in, [class*="fade-in-"]'
+  );
+
   fadeElements.forEach((el, index) => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-    el.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
-    
+    el.style.opacity = "0";
+    el.style.transform = "translateY(20px)";
+    el.style.transition = "opacity 0.6s ease-out, transform 0.6s ease-out";
+
     // Staggered delay for elements with fade-in class
-    if (el.classList.contains('fade-in')) {
+    if (el.classList.contains("fade-in")) {
       el.style.transitionDelay = `${0.1 * (index % 5)}s`;
     }
   });
-  
+
   const revealOnScroll = () => {
-    fadeElements.forEach(el => {
+    fadeElements.forEach((el) => {
       const elementTop = el.getBoundingClientRect().top;
       const elementVisible = 150;
-      
+
       if (elementTop < window.innerHeight - elementVisible) {
-        el.style.opacity = '1';
-        el.style.transform = 'translateY(0)';
+        el.style.opacity = "1";
+        el.style.transform = "translateY(0)";
       }
     });
   };
-  
+
   // Initial check
   revealOnScroll();
-  
+
   // Check on scroll
-  window.addEventListener('scroll', revealOnScroll);
+  window.addEventListener("scroll", revealOnScroll);
 }
 
 // 3D Tilt Effect
