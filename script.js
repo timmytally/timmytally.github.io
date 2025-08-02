@@ -77,7 +77,9 @@ function setupNavbarScroll() {
 
 // Mobile menu functionality
 function setupMobileMenu() {
-  if (!hamburger || !navLinks) return;
+  // Only run on mobile devices
+  const isMobile = window.innerWidth <= 768;
+  if (!hamburger || !navLinks || !isMobile) return;
 
   // Toggle mobile menu
   const toggleMenu = (e) => {
@@ -86,8 +88,8 @@ function setupMobileMenu() {
 
     // Toggle menu and overlay
     navLinks.classList.toggle("active");
-    hamburger.classList.toggle("active");
-    navOverlay.classList.toggle("active");
+    if (hamburger) hamburger.classList.toggle("active");
+    if (navOverlay) navOverlay.classList.toggle("active");
 
     // Toggle body scroll
     document.body.style.overflow = isOpening ? "hidden" : "";
@@ -331,10 +333,45 @@ function initTheme() {
   }
 }
 
+// Check if device is mobile
+function isMobile() {
+  return window.innerWidth <= 768;
+}
+
+// Handle window resize
+debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
+// Handle responsive behavior
+function handleResponsive() {
+  const mobile = isMobile();
+  
+  // Reset mobile menu if resizing to desktop
+  if (!mobile && navLinks && navLinks.classList.contains('active')) {
+    navLinks.classList.remove('active');
+    if (hamburger) hamburger.classList.remove('active');
+    if (navOverlay) navOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+}
+
 // Initialize animations on page load
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize theme first
   initTheme();
+  
+  // Set up responsive behavior
+  window.addEventListener('resize', debounce(handleResponsive, 100));
+  handleResponsive(); // Initial check
 
   // Initialize mobile menu
   setupMobileMenu();
