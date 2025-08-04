@@ -1,8 +1,11 @@
 document.addEventListener("DOMContentLoaded", function () {
-  // Mobile menu toggle
+  // Mobile menu elements
   const navToggle = document.getElementById("navToggle");
   const navLinks = document.getElementById("navLinks");
   const bars = document.querySelectorAll(".bar");
+  const navOverlay = document.createElement("div");
+  navOverlay.className = "nav-overlay";
+  document.body.appendChild(navOverlay);
 
   // Theme toggle
   const themeToggle = document.getElementById("themeToggle");
@@ -12,32 +15,78 @@ document.addEventListener("DOMContentLoaded", function () {
   // Set current year in footer
   document.getElementById("currentYear").textContent = new Date().getFullYear();
 
-  // Mobile menu functionality
-  if (navToggle) {
-    navToggle.addEventListener("click", function () {
-      navLinks.classList.toggle("active");
+  // Toggle mobile menu function
+  function toggleMenu() {
+    const isOpening = !navLinks.classList.contains("active");
+    
+    if (isOpening) {
+      // Open menu
+      navLinks.classList.add("active");
+      navOverlay.classList.add("active");
+      document.body.style.overflow = "hidden";
+      
+      // Force reflow to enable transition
+      void navLinks.offsetWidth;
+      navLinks.classList.add("show");
+      
+      // Add active class to hamburger with delay for better UX
+      setTimeout(() => {
+        navToggle.classList.add("active");
+      }, 10);
+    } else {
+      // Close menu
+      navLinks.classList.remove("show");
+      navOverlay.classList.remove("active");
+      document.body.style.overflow = "";
+      navToggle.classList.remove("active");
+      
+      // Remove active class after transition
+      setTimeout(() => {
+        navLinks.classList.remove("active");
+      }, 300);
+    }
+  }
 
-      // Animate hamburger to X
-      bars[0].classList.toggle("rotate-45");
-      bars[0].classList.toggle("translate-y-1.5");
-      bars[1].classList.toggle("opacity-0");
-      bars[2].classList.toggle("rotate--45");
-      bars[2].classList.toggle("translate-y--1.5");
+  // Mobile menu toggle click handler
+  if (navToggle) {
+    navToggle.addEventListener("click", function (e) {
+      e.stopPropagation();
+      toggleMenu();
     });
   }
 
-  // Close mobile menu when clicking on a link
+  // Close menu when clicking on overlay
+  navOverlay.addEventListener("click", function () {
+    toggleMenu();
+  });
+
+  // Close menu when clicking outside on mobile
+  document.addEventListener("click", function (e) {
+    if (window.innerWidth <= 992 && navLinks.classList.contains("active") && 
+        !e.target.closest('.nav-links') && !e.target.closest('.nav-toggle')) {
+      toggleMenu();
+    }
+  });
+
+  // Close menu when clicking on a link
   const navItems = document.querySelectorAll(".nav-links a");
   navItems.forEach((item) => {
     item.addEventListener("click", () => {
       if (navLinks.classList.contains("active")) {
-        navLinks.classList.remove("active");
-        // Reset hamburger icon
-        bars[0].classList.remove("rotate-45", "translate-y-1.5");
-        bars[1].classList.remove("opacity-0");
-        bars[2].classList.remove("rotate--45", "translate-y--1.5");
+        toggleMenu();
       }
     });
+  });
+
+  // Close menu on window resize if it goes above mobile breakpoint
+  let resizeTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() {
+      if (window.innerWidth > 992 && navLinks.classList.contains("active")) {
+        toggleMenu();
+      }
+    }, 250);
   });
 
   // Theme toggle functionality
